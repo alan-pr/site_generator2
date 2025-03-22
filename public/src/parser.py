@@ -1,5 +1,4 @@
 from enum import Enum
-import re
 
 
 class TextType(Enum):
@@ -25,8 +24,6 @@ class Parser:
         return html_text
 
 
-
-
     def __parse_delimiter(self, text, text_type):
         html_lines = []
         delimiter = self.__get_text_type_symbol(text_type)
@@ -38,13 +35,11 @@ class Parser:
                     html_text = self.__split_text_delimiter(line, delimiter, text_type)
                 else:
                     html_text = self.__split_text_outer_delimiter(line, delimiter, text_type)
-                html_text = self.__parse_delimiter(html_text, text_type)
             else:
                 html_text = line
             html_lines.append(html_text)
 
         return '\n'.join(html_lines)
-
 
 
     def __get_text_type_symbol(self, text_type):
@@ -93,6 +88,8 @@ class Parser:
         for text_type in list(TextType):
             if text_type in [TextType.TEXT, TextType.LINK, TextType.IMAGE]:
                 continue
+            if text.count(self.__get_text_type_symbol(text_type)) < 2:
+                continue
             symbol = self.__get_text_type_symbol(text_type)
             current_index = text.find(symbol)
             if 0 <= current_index < foremost_index:
@@ -120,9 +117,10 @@ class Parser:
                 return False
 
 
-text = """This is a **bold text** and **also this**
-This an _italic text_
-This is a `code text`
+text = """**This is a bold text with an _**italic text_** inside** and** also this**
+This an italic text_
+This is a `_code text_`
+This is another **bold text**
     """
 parser = Parser()
 print(parser.convert_to_html(text))

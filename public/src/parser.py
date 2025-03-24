@@ -27,12 +27,13 @@ def parse(text):
     html_text = text
     while True:
         text_type = get_foremost_symbol(html_text)
-        if text_type is None:
+        if text_type == TextType.TEXT:
+            html_text = parse_plain_text(html_text)
             break
-        if text_type == TextType.TEXT and text_type not in TEXT_FORMATS[1:]:
-            html_text = parse_link_and_image_texts(html_text)
         else:
             html_text = parse_delimiter(html_text, text_type)
+        if text_type is None:
+            break
     return html_text
 
 
@@ -49,6 +50,7 @@ def parse_delimiter(text, text_type):
                 html_text = split_text_outer_delimiter(paragraph, delimiter, text_type)
         else:
             html_text = text
+        html_text = add_paragraph_tags(html_text)
         html_paragraphs.append(html_text.replace("\n", ' '))
     return ''.join(html_paragraphs)
 
@@ -81,6 +83,10 @@ def split_text_outer_delimiter(text, delimiter, text_type):
     return f"{before}<{tag}>{middle}</{tag}>{after}"
 
 
+def parse_plain_text(text):
+    return add_paragraph_tags(text)
+
+
 def parse_link_and_image_texts(text):
     html_text = text
     if is_markdown_link_present(text):
@@ -92,7 +98,7 @@ def parse_link_and_image_texts(text):
 
 
 def add_paragraph_tags(text):
-    if text[:3] == "<p>" and text[-4:]:
+    if text[:3] == "<p>" and text[-4:] == "</p>":
         return text
     return "<p>" + text + "</p>"
 
@@ -113,12 +119,16 @@ def get_foremost_symbol(text):
                 foremost_index = current_index
                 foremost_text_type = text_type
     if foremost_text_type is None:
-        return None
+        return get_non_format_text(foremost_text_type)
     return foremost_text_type
 
 
 def get_non_format_text(text_type):
-    pass
+    if text_type is TextType.LINK:
+        pass
+    elif text_type is TextType.IMAGE:
+        pass
+    return TextType.TEXT
 
 
 
@@ -169,7 +179,7 @@ def is_markdown_link_present(text):
 
 
 
-# text = "This is a plain text. [Google](www.google.com) and [Test](www.test.com)"
-text = "This is a bold text."
+text = "This is a plain text. [Google](www.google.com) and [Test](www.test.com)"
+# text = "This is a **bold text**."
 print()
 print(parse(text))

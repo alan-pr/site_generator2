@@ -27,12 +27,12 @@ def parse(text):
     html_text = text
     while True:
         text_type = get_foremost_symbol(html_text)
-        if text_type == TextType.TEXT:
-            html_text = parse_plain_text(html_text)
-            break
-        else:
+        if text_type in TEXT_FORMATS[1:]:
             html_text = parse_delimiter(html_text, text_type)
-        if text_type is None:
+        elif text_type is TextType.LINK:
+            html_text = parse_link_and_image_texts(html_text)
+        elif text_type is TextType.TEXT:
+            html_text = parse_plain_text(html_text).replace('\n', ' ')
             break
     return html_text
 
@@ -119,15 +119,13 @@ def get_foremost_symbol(text):
                 foremost_index = current_index
                 foremost_text_type = text_type
     if foremost_text_type is None:
-        return get_non_format_text(foremost_text_type)
+        return get_non_format_text(text)
     return foremost_text_type
 
 
-def get_non_format_text(text_type):
-    if text_type is TextType.LINK:
-        pass
-    elif text_type is TextType.IMAGE:
-        pass
+def get_non_format_text(text):
+    if is_markdown_link_present(text):
+        return TextType.LINK
     return TextType.TEXT
 
 
@@ -166,6 +164,14 @@ def is_symbol_present(text, symbol):
     return is_symbol_valid(symbol) and text.count(symbol) > 1
 
 
+def are_formatted_text_symbols_present(text):
+    for text_type in TEXT_FORMATS[1:]:
+        symbol = get_text_type_symbol(text_type)
+        if is_symbol_present(text, symbol):
+            return True
+    return False
+
+
 def extract_markdown_images(text):
     return re.findall(IMAGE_REGEX, text)
 
@@ -179,7 +185,4 @@ def is_markdown_link_present(text):
 
 
 
-text = "This is a plain text. [Google](www.google.com) and [Test](www.test.com)"
-# text = "This is a **bold text**."
-print()
-print(parse(text))
+

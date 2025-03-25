@@ -32,7 +32,8 @@ def parse(text):
         elif text_type is TextType.LINK:
             html_text = parse_link_and_image_texts(html_text)
         elif text_type is TextType.TEXT:
-            html_text = parse_plain_text(html_text).replace('\n', ' ')
+            # html_text = parse_plain_text(html_text).replace('\n', ' ')
+            html_text = split_multiline_plain_text(html_text)
             break
     return html_text
 
@@ -83,8 +84,20 @@ def split_text_outer_delimiter(text, delimiter, text_type):
     return f"{before}<{tag}>{middle}</{tag}>{after}"
 
 
+def split_multiline_plain_text(text):
+    html_lines = []
+    if text.count("\n\n") > 0:
+        paragraphs = text.split("\n\n")
+        html_text = ""
+        for paragraph in paragraphs:
+            html_text = parse_plain_text(paragraph)
+            html_lines.append(html_text)
+        return ''.join(html_lines)
+    return parse_plain_text(text)
+
+
 def parse_plain_text(text):
-    return add_paragraph_tags(text)
+    return add_paragraph_tags(text).replace('\n', ' ')
 
 
 def parse_link_and_image_texts(text):
@@ -185,4 +198,7 @@ def is_markdown_link_present(text):
 
 
 
-
+text = "Hello\n\n[Google](www.google.com)"
+# text = "This is a **bold text**."
+print()
+print(parse(text))

@@ -29,10 +29,9 @@ def parse(text):
         text_type = get_foremost_symbol(html_text)
         if text_type in TEXT_FORMATS[1:]:
             html_text = parse_delimiter(html_text, text_type)
-        elif text_type is TextType.LINK:
+        elif text_type is TextType.LINK or text_type is TextType.IMAGE:
             html_text = parse_link_and_image_texts(html_text)
         elif text_type is TextType.TEXT:
-            # html_text = parse_plain_text(html_text).replace('\n', ' ')
             html_text = split_multiline_plain_text(html_text)
             break
     return html_text
@@ -107,6 +106,11 @@ def parse_link_and_image_texts(text):
         for link in links:
             formatted_link = f"<a href=\"{link[1]}\">{link[0]}</a>"
             html_text = re.sub(LINK_REGEX, formatted_link, html_text, count=1)
+    else:
+        images = extract_markdown_images(text)
+        for image in images:
+            formatted_image = f"<img src=\"{image[1]}\" alt=\"{image[0]}\">"
+            html_text = re.sub(IMAGE_REGEX, formatted_image, html_text, count=1)
     return html_text
 
 
@@ -139,6 +143,8 @@ def get_foremost_symbol(text):
 def get_non_format_text(text):
     if is_markdown_link_present(text):
         return TextType.LINK
+    if is_markdown_image_present(text):
+        return TextType.IMAGE
     return TextType.TEXT
 
 
@@ -197,8 +203,12 @@ def is_markdown_link_present(text):
     return re.search(LINK_REGEX, text) is not None
 
 
+def is_markdown_image_present(text):
+    return re.search(IMAGE_REGEX, text) is not None
 
-text = "Hello\n\n[Google](www.google.com)"
+
+
+text = "Hello\n\n[Google](www.google.com)![Image](www.image.com)"
 # text = "This is a **bold text**."
 print()
 print(parse(text))

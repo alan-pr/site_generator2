@@ -1,3 +1,4 @@
+from sys import argv
 from enum import Enum
 import re
 
@@ -19,6 +20,21 @@ IMAGE_REGEX = r"!\[(.*?)\]\((.*?)\)"
 
 
 # Static Functions
+def main():
+    if not argv:
+        return
+    if len(argv) < 2 or not argv[1].startswith('-') or argv[1].count('-') != 1:
+        return
+    flags = argv[1][1:].split()
+    if 'r' not in flags:
+        return
+    try:
+        print(convert_to_html(argv[2]))
+    except IndexError:
+        print("Raw HTML code must be provided.")
+
+
+
 def convert_to_html(text):
     return parse(text)
 
@@ -207,8 +223,4 @@ def is_markdown_image_present(text):
     return re.search(IMAGE_REGEX, text) is not None
 
 
-
-text = "Hello\n\n[Google](www.google.com)![Image](www.image.com)"
-# text = "This is a **bold text**."
-print()
-print(parse(text))
+main()

@@ -1,8 +1,10 @@
+from math import hypot
 from sys import argv
 from enum import Enum
 import re
 
 
+# Types Enum
 class TextType(Enum):
     TEXT = "text"
     BOLD = "bold"
@@ -12,11 +14,23 @@ class TextType(Enum):
     IMAGE = "image"
 
 
+class BlockType(Enum):
+    PARAGRAPH = "paragraph"
+    HEADING = "heading"
+    CODE = "code"
+    QUOTE = "quote"
+    UNORDERED_LIST = "unordered_list"
+    ORDERED_LIST = "ordered_list"
+
+
 # Constants
 TEXT_FORMATS = [TextType.TEXT, TextType.BOLD, TextType.ITALIC, TextType.CODE]
 TEXT_LINKS = [TextType.LINK, TextType.IMAGE]
 LINK_REGEX = r"(?<!\!)\[(.*?)\]\((.*?)\)"
 IMAGE_REGEX = r"!\[(.*?)\]\((.*?)\)"
+HEADING_REGEX = r"^(\#{1,6})\s(.*)"
+CODE_BLOCK_REGEX = f"^```$"
+QUOTE_REGEX = f"^(>)(.*)"
 
 
 # Static Functions
@@ -40,7 +54,7 @@ def convert_to_html(text):
 
 
 def parse(text):
-    html_text = text
+    html_text = parse_block_text(text)
     while True:
         text_type = get_foremost_symbol(html_text)
         if text_type in TEXT_FORMATS[1:]:
@@ -130,10 +144,69 @@ def parse_link_and_image_texts(text):
     return html_text
 
 
+def parse_block_text(text):
+    split_text = re.split(r"(?<!\n)\n(?!\n)", text)
+    new_lines = []
+    code_block_text_access = False
+    quote_block_access = False
+    for line in split_text:
+        heading = re.findall(HEADING_REGEX, line)
+        code_block = re.findall(CODE_BLOCK_REGEX, line)
+        quote = re.findall(QUOTE_REGEX, line)
+        if heading:
+            size = len(heading[0][0])
+            formatted_text = add_header_tags(size, line)
+            new_lines.append(formatted_text)
+        if code_block_text_access and not code_block:
+            formatted_text = add_code_block_tags(line)
+            new_lines.append(formatted_text)
+        if code_block:
+            formatted_text = get_pre_code_tag(code_block_text_access)
+            code_block_text_access = not code_block_text_access
+            new_lines.append(formatted_text)
+        if not quote and quote_block_access:
+            formatted_text = line
+            if "\n" in line:
+                formatted_text = add_closing_quote_tag(line)
+            new_lines.append(formatted_text)
+        if quote:
+            quote_block_access = True
+            formatted_text = add_opening_quote_tag(line)
+            new_lines.append(formatted_text)
+        if not heading and not code_block and not code_block_text_access and not quote and not quote_block_access:
+            new_lines.append(line)
+    return "\n".join(new_lines)
+
+
 def add_paragraph_tags(text):
     if text[:3] == "<p>" and text[-4:] == "</p>":
         return text
     return "<p>" + text + "</p>"
+
+
+def add_header_tags(size, text):
+    if size not in range(1, 7):
+        raise ValueError("Header sizes should be from 1 to 6.")
+    return f"<h{size}>{text.replace('#', '', size).lstrip()}</h{size}>"
+
+
+def add_code_block_tags(text):
+    return f"<code>{text}</code>"
+
+
+def get_pre_code_tag(code_access):
+    if code_access:
+        return "</pre>"
+    return "<pre>"
+
+
+def add_opening_quote_tag(text):
+    return f"<blockquote>{text.replace('>', '', 1)}"
+
+
+def add_closing_quote_tag(text):
+    end_index = text.find("\n")
+    return f"{text[:end_index]}</blockquote>{text[end_index:]}"
 
 
 def get_foremost_symbol(text):
@@ -223,4 +296,7 @@ def is_markdown_image_present(text):
     return re.search(IMAGE_REGEX, text) is not None
 
 
-main()
+# main()
+text = ">This is a quote block.\nAlso this.\n\nBut not this."
+print(convert_to_html(text))
+# print(re.findall(HEADING_REGEX, "###### Hello World!"))

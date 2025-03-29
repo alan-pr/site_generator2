@@ -1,4 +1,4 @@
 # # site_generator2
 
-2. Uno
-3. Dos
+0. Uno
+1. Dos

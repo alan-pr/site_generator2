@@ -1,6 +1,4 @@
 # # site_generator2
 
-1. item
-2. item
-4. item
-3. LOLO
+2. Uno
+3. Dos
